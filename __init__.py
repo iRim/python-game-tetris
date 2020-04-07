@@ -25,7 +25,7 @@ class Figure:
         return self.body.create_rectangle(
             x, y, x + self.PIXEL, y + self.PIXEL, fill=bg)
 
-    def getFigure(self):
+    def get(self):
         self._generate()
         return self.FIGURE_PIXELS
 
@@ -46,6 +46,7 @@ class Tetris:
         'LetterSR',
         'LetterT'
     ]
+    FIGURE_PIXELS = []
 
     def __init__(self):
         self._createWindow()
@@ -60,7 +61,7 @@ class Tetris:
 
     def _randomFigure(self):
         figure = choice(self.FIGURES)
-        getattr(self, figure)(self.body)
+        self.FIGURE_PIXELS = getattr(self, figure)(self.body).get()
 
     def _moveFigure(self, e):
         print(e)
@@ -76,7 +77,7 @@ class Tetris:
 
     def _start(self):
         self._randomFigure()
-        self.body.bind("<KeyPress>", self._moveFigure)
+        self.body.bind("<KeyPress>", self._moveFigure)  # ??????????
 
     def run(self):
         self._start()
@@ -94,8 +95,6 @@ class Tetris:
 
         def __init__(self, body):
             self.body = body
-            self.getFigure()
-            print(self.FIGURE_PIXELS)
 
     class Line(Figure):
 
@@ -109,7 +108,6 @@ class Tetris:
 
         def __init__(self, body):
             self.body = body
-            self.getFigure()
 
     class HorseL(Figure):
 
@@ -123,7 +121,6 @@ class Tetris:
 
         def __init__(self, body):
             self.body = body
-            self.getFigure()
 
     class HorseR(Figure):
 
@@ -137,7 +134,6 @@ class Tetris:
 
         def __init__(self, body):
             self.body = body
-            self.getFigure()
 
     class LetterSL(Figure):
 
@@ -151,7 +147,6 @@ class Tetris:
 
         def __init__(self, body):
             self.body = body
-            self.getFigure()
 
     class LetterSR(Figure):
 
@@ -165,7 +160,6 @@ class Tetris:
 
         def __init__(self, body):
             self.body = body
-            self.getFigure()
 
     class LetterT(Figure):
 
@@ -179,7 +173,6 @@ class Tetris:
 
         def __init__(self, body):
             self.body = body
-            self.getFigure()
 
 
 if __name__ == "__main__":
