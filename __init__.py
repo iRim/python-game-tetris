@@ -24,9 +24,6 @@ class Tetris:
     def run(self):
         self.root.mainloop()
 
-    def _createPixel(self, x, y, bg):
-        return self.body.create_rectangle(x, y, x)
-
 
 if __name__ == "__main__":
     Tetris().run()
