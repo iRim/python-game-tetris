@@ -1,12 +1,17 @@
 # Encoding: utf-8
 
 from tkinter import Tk, Canvas
-from random import choice
+from random import choice, randint
+
+TITLE = 'Tetris by Rim'
+PIXEL = 30
+BODY_W = PIXEL * 12
+BODY_H = BODY_W * 2
+BODY_BG = '#000000'
 
 
 class Figure:
 
-    PIXEL = 20
     POINT_ROW = 5
     POINT_COLUMN = 0
     FIGURE_PIXELS = []
@@ -15,69 +20,99 @@ class Figure:
         super().__init__()
 
     def _generate(self):
-        for pix in self.PIXELS:
-            x = pix['x'] * self.PIXEL + self.POINT_ROW * self.PIXEL
-            y = pix['y'] * self.PIXEL + self.POINT_COLUMN * self.PIXEL
+        index = 0
+        if len(self.PIXELS) > 1:
+            index = randint(0, len(self.PIXELS) - 1)
+        self.FIGURE_INDEX = index
+
+        for pix in self.PIXELS[index]:
+            x = pix['x'] * PIXEL + self.POINT_ROW * PIXEL
+            y = pix['y'] * PIXEL + self.POINT_COLUMN * PIXEL
             self.FIGURE_PIXELS.append(
                 self._createPixel(x, y, self.PIXEL_COLOR))
 
     def _createPixel(self, x, y, bg='#ffffff'):
         return self.body.create_rectangle(
-            x, y, x + self.PIXEL, y + self.PIXEL, fill=bg)
+            x, y, x + PIXEL, y + PIXEL, fill=bg)
 
-    def get(self):
+    def random(self):
         self._generate()
-        return self.FIGURE_PIXELS
+        return self.FIGURE_PIXELS, self.FIGURE_INDEX
 
 
 class Tetris:
 
-    TITLE = 'Tetris by Rim'
-    BODY_W = 240  # 12 стовбців по 20
-    BODY_H = 480  # 24 рядків по 20
-    BODY_BG = '#000000'
-
     FIGURES = [
-        'Cube',
-        'Line',
+        # 'Cube',
+        # 'Line',
         'HorseL',
-        'HorseR',
-        'LetterSL',
-        'LetterSR',
-        'LetterT'
+        # 'HorseR',
+        # 'LetterSL',
+        # 'LetterSR',
+        # 'LetterT'
     ]
+    FIGURE = None
     FIGURE_PIXELS = []
+    FIGURE_INDEX = 0
+    MOVE_RIGHT = True
+    MOVE_LEFT = True
 
     def __init__(self):
         self._createWindow()
 
     def _createWindow(self):
         self.root = Tk()
-        self.root.title(self.TITLE)
+        self.root.title(TITLE)
 
-        self.body = Canvas(self.root, width=self.BODY_W,
-                           height=self.BODY_H, bg=self.BODY_BG)
+        self.body = Canvas(self.root, width=BODY_W,
+                           height=BODY_H, bg=BODY_BG)
         self.body.grid()
+        self.body.focus_set()
 
     def _randomFigure(self):
-        figure = choice(self.FIGURES)
-        self.FIGURE_PIXELS = getattr(self, figure)(self.body).get()
+        self.FIGURE = choice(self.FIGURES)
+        self.FIGURE_PIXELS, self.FIGURE_INDEX = getattr(
+            self, self.FIGURE)(self.body).random()
 
-    def _moveFigure(self, e):
-        print(e)
-        # if e.keysym in ['Left', 'Right']:
-        #     pass  # move left-right
-        # elif e.keysym == 'Up':
-        #     self._rotateFigure()
-        # else:
-        #     pass  # fast move to down
+    def _keypress(self, e):
+        if e.keysym in ['Left', 'Right']:
+            self._moveFigure(e.keysym)
+        elif e.keysym == 'Up':
+            self._rotateFigure()
+        else:
+            print('Fast move to Down')
 
     def _rotateFigure(self):
-        print('ROTATE')
+        print(self.FIGURE, self.FIGURE_PIXELS, self.FIGURE_INDEX)
+
+    def _moveFigure(self, move):
+        if (self.MOVE_LEFT and move == 'Left') or (self.MOVE_RIGHT and move != 'Left'):
+            if move == 'Left':
+                move = -1
+            else:
+                move = 1
+
+            check_pix = []
+
+            for pix in self.FIGURE_PIXELS:
+                x, y, x1, y1 = self.body.coords(pix)
+                if (move < 0 and int(x) > 0) or (move > 0 and int(x) + PIXEL < BODY_W):
+                    x_new = int(x + move * PIXEL)
+                    self.body.coords(pix, x_new, y, x_new + PIXEL, y + PIXEL)
+                    check_pix.append(x_new)
+
+            check_pix.sort()
+            if check_pix[-1] + PIXEL == BODY_W:
+                self.MOVE_RIGHT = False
+            elif check_pix[0] == 0:
+                self.MOVE_LEFT = False
+            else:
+                self.MOVE_LEFT = True
+                self.MOVE_RIGHT = True
 
     def _start(self):
         self._randomFigure()
-        self.body.bind("<KeyPress>", self._moveFigure)  # ??????????
+        self.body.bind("<KeyPress>", self._keypress)
 
     def run(self):
         self._start()
@@ -86,10 +121,12 @@ class Tetris:
     class Cube(Figure):
 
         PIXELS = [
-            {'x': 0, 'y': 0},
-            {'x': 1, 'y': 0},
-            {'x': 0, 'y': 1},
-            {'x': 1, 'y': 1},
+            [
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': 0},
+                {'x': 0, 'y': 1},
+                {'x': 1, 'y': 1},
+            ]
         ]
         PIXEL_COLOR = 'gray'
 
@@ -99,10 +136,18 @@ class Tetris:
     class Line(Figure):
 
         PIXELS = [
-            {'x': 0, 'y': 0},
-            {'x': 1, 'y': 0},
-            {'x': 2, 'y': 0},
-            {'x': 3, 'y': 0},
+            [
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': 0},
+                {'x': 2, 'y': 0},
+                {'x': 3, 'y': 0},
+            ],
+            [
+                {'x': 0, 'y': 0},
+                {'x': 0, 'y': 1},
+                {'x': 0, 'y': 2},
+                {'x': 0, 'y': 3},
+            ]
         ]
         PIXEL_COLOR = 'red'
 
@@ -112,10 +157,27 @@ class Tetris:
     class HorseL(Figure):
 
         PIXELS = [
-            {'x': 0, 'y': 0},
-            {'x': 1, 'y': 0},
-            {'x': 2, 'y': 0},
-            {'x': 0, 'y': 1},
+            [
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': 0},
+                {'x': 2, 'y': 0},
+                {'x': 0, 'y': 1},
+            ], [
+                {'x': 1, 'y': 0},
+                {'x': 1, 'y': 1},
+                {'x': 1, 'y': 2},
+                {'x': 0, 'y': 0},
+            ], [
+                {'x': 0, 'y': 1},
+                {'x': 1, 'y': 1},
+                {'x': 2, 'y': 1},
+                {'x': 2, 'y': 0},
+            ], [
+                {'x': 0, 'y': 1},
+                {'x': 1, 'y': 1},
+                {'x': 2, 'y': 1},
+                {'x': 2, 'y': 0},
+            ]
         ]
         PIXEL_COLOR = 'violet'
 
