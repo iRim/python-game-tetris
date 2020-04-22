@@ -9,25 +9,29 @@ BODY_W = PIXEL * 12
 BODY_H = BODY_W * 2
 BODY_BG = '#000000'
 
+POINT_ROW = 0
+POINT_COLUMN = (BODY_W / PIXEL) // 2
+
+TEXT_NORMAL = 'Почати гру'
+TEXT_NORMAL_FONT = ('Tahoma', 24)
+TEXT_NORMAL_COLOR = '#ffffff'
+
+TEXT_ERROR = 'Ви програли'
+TEXT_ERROR_FONT = ('Verdana', 18)
+TEXT_ERROR_COLOR = '#cc0000'
+
 
 class Figure:
 
-    POINT_ROW = 5
-    POINT_COLUMN = 0
     FIGURE_PIXELS = []
 
     def __init__(self):
         super().__init__()
 
     def _generate(self):
-        index = 0
-        if len(self.PIXELS) > 1:
-            index = randint(0, len(self.PIXELS) - 1)
-        self.FIGURE_INDEX = index
-
-        for pix in self.PIXELS[index]:
-            x = pix['x'] * PIXEL + self.POINT_ROW * PIXEL
-            y = pix['y'] * PIXEL + self.POINT_COLUMN * PIXEL
+        for pix in self.PIXELS[0]:
+            x = pix['x'] * PIXEL + POINT_COLUMN * PIXEL
+            y = pix['y'] * PIXEL + POINT_ROW * PIXEL
             self.FIGURE_PIXELS.append(
                 self._createPixel(x, y, self.PIXEL_COLOR))
 
@@ -35,29 +39,31 @@ class Figure:
         return self.body.create_rectangle(
             x, y, x + PIXEL, y + PIXEL, fill=bg)
 
-    def random(self):
+    def get(self):
         self._generate()
-        return self.FIGURE_PIXELS, self.FIGURE_INDEX
+        return self.FIGURE_PIXELS
 
 
 class Tetris:
 
     FIGURES = [
-        # 'Cube',
-        # 'Line',
+        'Cube',
+        'Line',
         'HorseL',
-        # 'HorseR',
-        # 'LetterSL',
-        # 'LetterSR',
-        # 'LetterT'
+        'HorseR',
+        'LetterSL',
+        'LetterSR',
+        'LetterT'
     ]
     FIGURE = None
     FIGURE_PIXELS = []
     FIGURE_INDEX = 0
     MOVE_RIGHT = True
     MOVE_LEFT = True
+    ALL_PIXELS = []
 
     def __init__(self):
+        self._endGame = True
         self._createWindow()
 
     def _createWindow(self):
@@ -69,21 +75,50 @@ class Tetris:
         self.body.grid()
         self.body.focus_set()
 
+    def _getFigure(self):
+        return getattr(self, self.FIGURE)(self.body)
+
     def _randomFigure(self):
         self.FIGURE = choice(self.FIGURES)
-        self.FIGURE_PIXELS, self.FIGURE_INDEX = getattr(
-            self, self.FIGURE)(self.body).random()
+        self.FIGURE_PIXELS = self._getFigure().get()
+        self.ALL_PIXELS += self.FIGURE_PIXELS
 
     def _keypress(self, e):
         if e.keysym in ['Left', 'Right']:
             self._moveFigure(e.keysym)
         elif e.keysym == 'Up':
-            self._rotateFigure()
+            self._rotate90Deg()
         else:
             print('Fast move to Down')
 
-    def _rotateFigure(self):
-        print(self.FIGURE, self.FIGURE_PIXELS, self.FIGURE_INDEX)
+    def _rotate90Deg(self):
+        figure = self._getFigure()
+        f_len = len(figure.PIXELS)
+        if f_len > 1:
+            self.FIGURE_INDEX += 1
+            if self.FIGURE_INDEX >= f_len:
+                self.FIGURE_INDEX = 1
+
+            f_next = figure.PIXELS[self.FIGURE_INDEX]
+
+            for key, pix in enumerate(self.FIGURE_PIXELS):
+                x, y, x1, y1 = self.body.coords(pix)
+                new_x = x + f_next[key]['x'] * PIXEL
+                new_y = y + f_next[key]['y'] * PIXEL
+                self.body.coords(pix, new_x, new_y, new_x +
+                                 PIXEL, new_y + PIXEL)
+
+    def _checkBorder(self):
+        arr = []
+        for pix in self.FIGURE_PIXELS:
+            x, y, x1, y1 = self.body.coords(pix)
+            if int(x) < 0:
+                arr.append(int(x))
+
+        arr.sort()
+        if len(arr) > 0:
+            for pix in self.FIGURE_PIXELS:
+                x, y, x1, y1 = self.body.coords(pix)
 
     def _moveFigure(self, move):
         if (self.MOVE_LEFT and move == 'Left') or (self.MOVE_RIGHT and move != 'Left'):
@@ -110,12 +145,38 @@ class Tetris:
                 self.MOVE_LEFT = True
                 self.MOVE_RIGHT = True
 
-    def _start(self):
+    def _moveDown(self):
+        self._endGame = True
+        self._end()
+
+    def _start(self, e):
+        self._endGame = False
+        self.body.itemconfig(self.text_error, state='hidden')
+        self.body.itemconfig(self.text_start, state='hidden')
+
         self._randomFigure()
+        self._moveDown()
         self.body.bind("<KeyPress>", self._keypress)
 
+    def _end(self):
+        self.body.itemconfig(self.text_error, state='normal')
+        self.body.itemconfig(self.text_start, state='normal')
+
+        for pix in self.ALL_PIXELS:
+            self.body.delete(pix)
+        self.ALL_PIXELS = []
+
+    def _createGame(self):
+        X = BODY_W // 2
+        Y = BODY_H // 2.2
+        self.text_error = self.body.create_text(
+            X, Y - PIXEL * 2, fill=TEXT_ERROR_COLOR, font=TEXT_ERROR_FONT, text=TEXT_ERROR, state='hidden')
+        self.text_start = self.body.create_text(
+            X, Y, fill=TEXT_NORMAL_COLOR, font=TEXT_NORMAL_FONT, text=TEXT_NORMAL)
+        self.body.tag_bind(self.text_start, '<Button>', self._start)
+
     def run(self):
-        self._start()
+        self._createGame()
         self.root.mainloop()
 
     class Cube(Figure):
@@ -137,16 +198,22 @@ class Tetris:
 
         PIXELS = [
             [
+                {'x': -1, 'y': 0},
                 {'x': 0, 'y': 0},
                 {'x': 1, 'y': 0},
                 {'x': 2, 'y': 0},
-                {'x': 3, 'y': 0},
             ],
             [
+                {'x': 1, 'y': -1},
                 {'x': 0, 'y': 0},
-                {'x': 0, 'y': 1},
-                {'x': 0, 'y': 2},
-                {'x': 0, 'y': 3},
+                {'x': -1, 'y': 1},
+                {'x': -2, 'y': 1},
+            ],
+            [
+                {'x': -1, 'y': 1},
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': -1},
+                {'x': 2, 'y': -1},
             ]
         ]
         PIXEL_COLOR = 'red'
@@ -155,29 +222,42 @@ class Tetris:
             self.body = body
 
     class HorseL(Figure):
-
         PIXELS = [
+            # дефолтне значення
             [
+                {'x': -1, 'y': 0},
                 {'x': 0, 'y': 0},
                 {'x': 1, 'y': 0},
-                {'x': 2, 'y': 0},
-                {'x': 0, 'y': 1},
-            ], [
-                {'x': 1, 'y': 0},
-                {'x': 1, 'y': 1},
-                {'x': 1, 'y': 2},
+                {'x': -1, 'y': 1},
+            ],
+            # на 90
+            [
+                {'x': 1, 'y': -1},
                 {'x': 0, 'y': 0},
-            ], [
-                {'x': 0, 'y': 1},
+                {'x': -1, 'y': 1},
+                {'x': 0, 'y': -2},
+            ],
+            # на 180
+            [
                 {'x': 1, 'y': 1},
-                {'x': 2, 'y': 1},
+                {'x': 0, 'y': 0},
+                {'x': -1, 'y': -1},
                 {'x': 2, 'y': 0},
-            ], [
-                {'x': 0, 'y': 1},
+            ],
+            # на 270
+            [
+                {'x': -1, 'y': 1},
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': -1},
+                {'x': 0, 'y': 2},
+            ],
+            # на 360
+            [
+                {'x': -1, 'y': -1},
+                {'x': 0, 'y': 0},
                 {'x': 1, 'y': 1},
-                {'x': 2, 'y': 1},
-                {'x': 2, 'y': 0},
-            ]
+                {'x': -2, 'y': 0},
+            ],
         ]
         PIXEL_COLOR = 'violet'
 
@@ -187,10 +267,41 @@ class Tetris:
     class HorseR(Figure):
 
         PIXELS = [
-            {'x': 0, 'y': 0},
-            {'x': 1, 'y': 0},
-            {'x': 2, 'y': 0},
-            {'x': 2, 'y': 1},
+            # дефолтне значення
+            [
+                {'x': -1, 'y': 0},
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': 0},
+                {'x': 1, 'y': 1},
+            ],
+            # на 90
+            [
+                {'x': 1, 'y': -1},
+                {'x': 0, 'y': 0},
+                {'x': -1, 'y': 1},
+                {'x': -2, 'y': 0},
+            ],
+            # на 180
+            [
+                {'x': 1, 'y': 1},
+                {'x': 0, 'y': 0},
+                {'x': -1, 'y': -1},
+                {'x': 0, 'y': -2},
+            ],
+            # на 270
+            [
+                {'x': -1, 'y': 1},
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': -1},
+                {'x': 2, 'y': 0},
+            ],
+            # на 360
+            [
+                {'x': -1, 'y': -1},
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': 1},
+                {'x': 0, 'y': 2},
+            ],
         ]
         PIXEL_COLOR = 'dodgerblue'
 
@@ -200,10 +311,24 @@ class Tetris:
     class LetterSL(Figure):
 
         PIXELS = [
-            {'x': 0, 'y': 0},
-            {'x': 1, 'y': 0},
-            {'x': 1, 'y': 1},
-            {'x': 2, 'y': 1},
+            [
+                {'x': -1, 'y': 0},
+                {'x': 0, 'y': 0},
+                {'x': 0, 'y': 1},
+                {'x': 1, 'y': 1},
+            ],
+            [
+                {'x': 1, 'y': -1},
+                {'x': 0, 'y': 0},
+                {'x': -1, 'y': -1},
+                {'x': -2, 'y': 0},
+            ],
+            [
+                {'x': -1, 'y': 1},
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': 1},
+                {'x': 2, 'y': 0},
+            ]
         ]
         PIXEL_COLOR = 'orange'
 
@@ -213,10 +338,24 @@ class Tetris:
     class LetterSR(Figure):
 
         PIXELS = [
-            {'x': 1, 'y': 0},
-            {'x': 2, 'y': 0},
-            {'x': 1, 'y': 1},
-            {'x': 0, 'y': 1},
+            [
+                {'x': -1, 'y': 0},
+                {'x': 0, 'y': 0},
+                {'x': 0, 'y': -1},
+                {'x': 1, 'y': -1},
+            ],
+            [
+                {'x': 1, 'y': -1},
+                {'x': 0, 'y': 0},
+                {'x': -1, 'y': -1},
+                {'x': -2, 'y': 0},
+            ],
+            [
+                {'x': -1, 'y': 1},
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': 1},
+                {'x': 2, 'y': 0},
+            ]
         ]
         PIXEL_COLOR = 'orangered'
 
@@ -226,10 +365,36 @@ class Tetris:
     class LetterT(Figure):
 
         PIXELS = [
-            {'x': 0, 'y': 0},
-            {'x': 1, 'y': 0},
-            {'x': 2, 'y': 0},
-            {'x': 1, 'y': 1},
+            [
+                {'x': -1, 'y': 0},
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': 0},
+                {'x': 0, 'y': -1},
+            ],
+            [
+                {'x': 1, 'y': -1},
+                {'x': 0, 'y': 0},
+                {'x': -1, 'y': 1},
+                {'x': 1, 'y': 1},
+            ],
+            [
+                {'x': 1, 'y': 1},
+                {'x': 0, 'y': 0},
+                {'x': -1, 'y': -1},
+                {'x': -1, 'y': 1},
+            ],
+            [
+                {'x': -1, 'y': 1},
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': -1},
+                {'x': -1, 'y': -1},
+            ],
+            [
+                {'x': -1, 'y': -1},
+                {'x': 0, 'y': 0},
+                {'x': 1, 'y': 1},
+                {'x': 1, 'y': -1},
+            ],
         ]
         PIXEL_COLOR = 'green'
 
