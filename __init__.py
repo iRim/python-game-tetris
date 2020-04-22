@@ -2,6 +2,7 @@
 
 from tkinter import Tk, Canvas
 from random import choice, randint
+from time import sleep
 
 TITLE = 'Tetris by Rim'
 PIXEL = 30
@@ -19,6 +20,8 @@ TEXT_NORMAL_COLOR = '#ffffff'
 TEXT_ERROR = 'Ви програли'
 TEXT_ERROR_FONT = ('Verdana', 18)
 TEXT_ERROR_COLOR = '#cc0000'
+
+DEFAULT_SPEED = 100
 
 
 class Figure:
@@ -61,6 +64,7 @@ class Tetris:
     MOVE_RIGHT = True
     MOVE_LEFT = True
     ALL_PIXELS = []
+    SPEED = DEFAULT_SPEED
 
     def __init__(self):
         self._endGame = True
@@ -85,7 +89,10 @@ class Tetris:
 
     def _keypress(self, e):
         if e.keysym in ['Left', 'Right']:
-            self._moveFigure(e.keysym)
+            position = 1
+            if e.keysym == 'Left':
+                position = -1
+            self._moveFigure('x', position)
         elif e.keysym == 'Up':
             self._rotate90Deg()
         else:
@@ -120,19 +127,17 @@ class Tetris:
             for pix in self.FIGURE_PIXELS:
                 x, y, x1, y1 = self.body.coords(pix)
 
-    def _moveFigure(self, move):
-        if (self.MOVE_LEFT and move == 'Left') or (self.MOVE_RIGHT and move != 'Left'):
-            if move == 'Left':
-                move = -1
-            else:
-                move = 1
+    def _moveFigureCheckX(self, x, position=1):
+        return (position < 0 and int(x) > 0) or (position > 0 and int(x) + PIXEL < BODY_W)
 
+    def _moveFigure(self, xy='y', position=1):
+        if (self.MOVE_LEFT and position == -1) or (self.MOVE_RIGHT and position == 1):
             check_pix = []
 
             for pix in self.FIGURE_PIXELS:
                 x, y, x1, y1 = self.body.coords(pix)
-                if (move < 0 and int(x) > 0) or (move > 0 and int(x) + PIXEL < BODY_W):
-                    x_new = int(x + move * PIXEL)
+                if self._moveFigureCheckX(x, position):
+                    x_new = int(x + position * PIXEL)
                     self.body.coords(pix, x_new, y, x_new + PIXEL, y + PIXEL)
                     check_pix.append(x_new)
 
@@ -146,8 +151,9 @@ class Tetris:
                 self.MOVE_RIGHT = True
 
     def _moveDown(self):
-        self._endGame = True
-        self._end()
+        while True:
+
+            sleep(self.SPEED)
 
     def _start(self, e):
         self._endGame = False
