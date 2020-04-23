@@ -59,11 +59,9 @@ class Tetris:
         'LetterT'
     ]
     FIGURE = None
-    FIGURE_PIXELS = []
     FIGURE_INDEX = 0
-    MOVE_RIGHT = True
-    MOVE_LEFT = True
-    ALL_PIXELS = []
+    ALL_PIXELS = ROW_PIXELS = FIGURE_PIXELS = []
+    MOVE_LEFT = MOVE_RIGHT = True
     SPEED = DEFAULT_SPEED
 
     def __init__(self):
@@ -96,6 +94,7 @@ class Tetris:
         elif e.keysym == 'Up':
             self._rotate90Deg()
         else:
+            self._moveFigure()
             print('Fast move to Down')
 
     def _rotate90Deg(self):
@@ -128,32 +127,53 @@ class Tetris:
                 x, y, x1, y1 = self.body.coords(pix)
 
     def _moveFigureCheckX(self, x, position=1):
-        return (position < 0 and int(x) > 0) or (position > 0 and int(x) + PIXEL < BODY_W)
+        if (position < 0 and int(x) > 0) or (position > 0 and int(x) + PIXEL < BODY_W):
+            return True
+        return False
 
     def _moveFigure(self, xy='y', position=1):
-        if (self.MOVE_LEFT and position == -1) or (self.MOVE_RIGHT and position == 1):
-            check_pix = []
+        if (xy == 'x' and ((self.MOVE_LEFT and position == -1) or (self.MOVE_RIGHT and position == 1))) or xy == 'y':
+            checkX = checkY = []
 
             for pix in self.FIGURE_PIXELS:
                 x, y, x1, y1 = self.body.coords(pix)
-                if self._moveFigureCheckX(x, position):
+                x_new = x
+                y_new = y
+                if xy == 'x' and ((position < 0 and int(x) > 0) or (position > 0 and int(x) + PIXEL < BODY_W)):
                     x_new = int(x + position * PIXEL)
-                    self.body.coords(pix, x_new, y, x_new + PIXEL, y + PIXEL)
-                    check_pix.append(x_new)
+                elif xy == 'y' and int(y) + PIXEL < BODY_H:
+                    y_new = int(y + PIXEL)
 
-            check_pix.sort()
-            if check_pix[-1] + PIXEL == BODY_W:
-                self.MOVE_RIGHT = False
-            elif check_pix[0] == 0:
-                self.MOVE_LEFT = False
+                self.body.coords(pix, x_new, y_new, x_new +
+                                 PIXEL, y_new + PIXEL)
+                if xy == 'x':
+                    checkX.append(x_new)
+                else:
+                    checkY.append(y_new)
+
+            if xy == 'x':
+                checkX.sort()
+                if checkX[-1] + PIXEL == BODY_W:
+                    self.MOVE_RIGHT = False
+                elif checkX[0] == 0:
+                    self.MOVE_LEFT = False
+                else:
+                    self.MOVE_LEFT = True
+                    self.MOVE_RIGHT = True
             else:
-                self.MOVE_LEFT = True
-                self.MOVE_RIGHT = True
+                checkY.sort()
+                if (checkY[-1] + PIXEL == BODY_H) or self._findFigureInRow():
+                    self.ROW_PIXELS += self.FIGURE_PIXELS
+                    self.FIGURE_PIXELS.clear()
+                    self._randomFigure()
+
+    def _findFigureInRow(self):
+        for pix in self.FIGURE_PIXELS:
 
     def _moveDown(self):
-        while True:
-
-            sleep(self.SPEED)
+        pass
+        # while True:
+        #     sleep(self.SPEED)
 
     def _start(self, e):
         self._endGame = False
@@ -170,7 +190,7 @@ class Tetris:
 
         for pix in self.ALL_PIXELS:
             self.body.delete(pix)
-        self.ALL_PIXELS = []
+        self.ALL_PIXELS.clear()
 
     def _createGame(self):
         X = BODY_W // 2
