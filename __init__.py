@@ -60,8 +60,12 @@ class Tetris:
     ]
     FIGURE = None
     FIGURE_INDEX = 0
-    ALL_PIXELS = ROW_PIXELS = FIGURE_PIXELS = []
-    MOVE_LEFT = MOVE_RIGHT = True
+    FIGURE_PIXELS = []
+    MOVE_LEFT = True
+    MOVE_RIGHT = True
+    ALL_PIXELS = []
+    ROW_PIXELS = []
+    ROW_PIXELS_COORDS = []
     SPEED = DEFAULT_SPEED
 
     def __init__(self):
@@ -95,7 +99,6 @@ class Tetris:
             self._rotate90Deg()
         else:
             self._moveFigure()
-            print('Fast move to Down')
 
     def _rotate90Deg(self):
         figure = self._getFigure()
@@ -147,15 +150,16 @@ class Tetris:
                 self.body.coords(pix, x_new, y_new, x_new +
                                  PIXEL, y_new + PIXEL)
                 if xy == 'x':
-                    checkX.append(x_new)
+                    checkX.append(int(x_new))
                 else:
-                    checkY.append(y_new)
+                    checkY.append(int(y_new))
 
             if xy == 'x':
                 checkX.sort()
-                if checkX[-1] + PIXEL == BODY_W:
+                print(checkX)
+                if checkX[-1] + PIXEL == BODY_W or self._findFigureInRow():
                     self.MOVE_RIGHT = False
-                elif checkX[0] == 0:
+                elif checkX[0] == 0 or self._findFigureInRow():
                     self.MOVE_LEFT = False
                 else:
                     self.MOVE_LEFT = True
@@ -163,12 +167,35 @@ class Tetris:
             else:
                 checkY.sort()
                 if (checkY[-1] + PIXEL == BODY_H) or self._findFigureInRow():
-                    self.ROW_PIXELS += self.FIGURE_PIXELS
-                    self.FIGURE_PIXELS.clear()
-                    self._randomFigure()
+                    self._figureInsertToRow()
 
     def _findFigureInRow(self):
         for pix in self.FIGURE_PIXELS:
+            x, y, x1, y1 = self.body.coords(pix)
+            coords1 = '{0}x{1}'.format(int(x), int(y + PIXEL))
+
+            x_new = int(x - PIXEL)
+            if x_new < 0:
+                x_new = 0
+            coords2 = '{0}x{1}'.format(x_new, int(y))
+
+            x_new = int(x + PIXEL)
+            if x_new > BODY_W:
+                x_new = BODY_W
+            coords3 = '{0}x{1}'.format(x_new, int(y))
+            print(coords1, coords2, coords3)
+            if coords1 in self.ROW_PIXELS_COORDS or coords2 in self.ROW_PIXELS_COORDS or coords3 in self.ROW_PIXELS_COORDS:
+                return True
+        return False
+
+    def _figureInsertToRow(self):
+        self.ROW_PIXELS += self.FIGURE_PIXELS
+        for pix in self.FIGURE_PIXELS:
+            x, y, x1, y1 = self.body.coords(pix)
+            self.ROW_PIXELS_COORDS.append(
+                '{x}x{y}'.format(x=int(x), y=int(y)))
+        self.FIGURE_PIXELS.clear()
+        self._randomFigure()
 
     def _moveDown(self):
         pass
