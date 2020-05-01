@@ -2,6 +2,7 @@
 
 from tkinter import Tk, Canvas
 from random import choice, randint
+from time import sleep
 
 TITLE = 'Tetris by Rim'
 PIXEL = 30
@@ -9,7 +10,7 @@ BODY_W = PIXEL * 12
 BODY_H = BODY_W * 2
 BODY_BG = '#000000'
 
-POINT_ROW = 0
+POINT_ROW = 2
 POINT_COLUMN = (BODY_W / PIXEL) // 2
 
 TEXT_NORMAL = 'Почати гру'
@@ -20,7 +21,7 @@ TEXT_ERROR = 'Ви програли'
 TEXT_ERROR_FONT = ('Verdana', 18)
 TEXT_ERROR_COLOR = '#cc0000'
 
-DEFAULT_SPEED = 300
+DEFAULT_SPEED = 100
 
 
 class Figure:
@@ -88,12 +89,6 @@ class Tetris:
         self.FIGURE_PIXELS = self._getFigure().get()
         self.ALL_PIXELS += self.FIGURE_PIXELS
 
-        figure = self._getFigure()
-        if len(figure.PIXELS) - 2 > 0:
-            rand = randint(0, len(figure.PIXELS) - 2)
-            for i in range(rand):
-                self._rotate90Deg()
-
     def _keypress(self, e):
         if e.keysym in ['Left', 'Right']:
             position = 1
@@ -122,6 +117,18 @@ class Tetris:
                 self.body.coords(pix, new_x, new_y, new_x +
                                  PIXEL, new_y + PIXEL)
 
+    def _checkBorder(self):
+        arr = []
+        for pix in self.FIGURE_PIXELS:
+            x, y, x1, y1 = self.body.coords(pix)
+            if int(x) < 0:
+                arr.append(int(x))
+
+        arr.sort()
+        if len(arr) > 0:
+            for pix in self.FIGURE_PIXELS:
+                x, y, x1, y1 = self.body.coords(pix)
+
     def _moveFigureCheckX(self, x, position=1):
         if (position < 0 and int(x) > 0) or (position > 0 and int(x) + PIXEL < BODY_W):
             return True
@@ -149,6 +156,7 @@ class Tetris:
 
             if xy == 'x':
                 checkX.sort()
+                print(checkX)
                 if checkX[-1] + PIXEL == BODY_W or self._findFigureInRow():
                     self.MOVE_RIGHT = False
                 elif checkX[0] == 0 or self._findFigureInRow():
@@ -189,10 +197,10 @@ class Tetris:
         self.FIGURE_PIXELS.clear()
         self._randomFigure()
 
-    def _move(self):
-        self._moveFigure()
-        if self._endGame != True:
-            self.root.after(self.SPEED, self._move)
+    def _moveDown(self):
+        pass
+        # while True:
+        #     sleep(self.SPEED)
 
     def _start(self, e):
         self._endGame = False
@@ -200,8 +208,8 @@ class Tetris:
         self.body.itemconfig(self.text_start, state='hidden')
 
         self._randomFigure()
+        self._moveDown()
         self.body.bind("<KeyPress>", self._keypress)
-        self._move()
 
     def _end(self):
         self.body.itemconfig(self.text_error, state='normal')
