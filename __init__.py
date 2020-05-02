@@ -5,8 +5,10 @@ from random import choice, randint
 
 TITLE = 'Tetris by Rim'
 PIXEL = 30
-BODY_W = PIXEL * 12
-BODY_H = BODY_W * 2
+COLUMNS = 12
+ROWS = 24
+BODY_W = PIXEL * COLUMNS
+BODY_H = PIXEL * ROWS
 BODY_BG = '#000000'
 
 POINT_ROW = 0
@@ -20,7 +22,7 @@ TEXT_ERROR = 'Ви програли'
 TEXT_ERROR_FONT = ('Verdana', 18)
 TEXT_ERROR_COLOR = '#cc0000'
 
-DEFAULT_SPEED = 300
+DEFAULT_SPEED = 500
 
 
 class Figure:
@@ -51,11 +53,11 @@ class Tetris:
     FIGURES = [
         'Cube',
         'Line',
-        'HorseL',
-        'HorseR',
-        'LetterSL',
-        'LetterSR',
-        'LetterT'
+        # 'HorseL',
+        # 'HorseR',
+        # 'LetterSL',
+        # 'LetterSR',
+        # 'LetterT'
     ]
     FIGURE = None
     FIGURE_INDEX = 0
@@ -85,8 +87,11 @@ class Tetris:
 
     def _randomFigure(self):
         self.FIGURE = choice(self.FIGURES)
+        self.FIGURE_INDEX = 0
         self.FIGURE_PIXELS = self._getFigure().get()
         self.ALL_PIXELS += self.FIGURE_PIXELS
+        self.MOVE_LEFT = True
+        self.MOVE_RIGHT = True
 
         figure = self._getFigure()
         if len(figure.PIXELS) - 2 > 0:
@@ -149,34 +154,49 @@ class Tetris:
 
             if xy == 'x':
                 checkX.sort()
-                if checkX[-1] + PIXEL == BODY_W or self._findFigureInRow():
-                    self.MOVE_RIGHT = False
-                elif checkX[0] == 0 or self._findFigureInRow():
+                if checkX[0] == 0 or self._checkEmptyLeftColumn():
                     self.MOVE_LEFT = False
                 else:
                     self.MOVE_LEFT = True
+
+                if checkX[-1] + PIXEL == BODY_W or self._checkEmptyRightColumn():
+                    self.MOVE_RIGHT = False
+                else:
                     self.MOVE_RIGHT = True
             else:
                 checkY.sort()
-                if (checkY[-1] + PIXEL == BODY_H) or self._findFigureInRow():
+                if (checkY[-1] + PIXEL == BODY_H) or self._checkEmptyNextRow():
                     self._figureInsertToRow()
 
-    def _findFigureInRow(self):
+    def _checkEmptyNextRow(self):
         for pix in self.FIGURE_PIXELS:
             x, y, x1, y1 = self.body.coords(pix)
-            coords1 = '{0}x{1}'.format(int(x), int(y + PIXEL))
+            coords = '{0}x{1}'.format(int(x), int(y + PIXEL))
+            if coords in self.ROW_PIXELS_COORDS:
+                return True
+        return False
 
+    def _checkEmptyLeftColumn(self):
+        for pix in self.FIGURE_PIXELS:
+            x, y, x1, y1 = self.body.coords(pix)
             x_new = int(x - PIXEL)
             if x_new < 0:
                 x_new = 0
-            coords2 = '{0}x{1}'.format(x_new, int(y))
+            coords = '{0}x{1}'.format(x_new, int(y))
 
+            if coords in self.ROW_PIXELS_COORDS:
+                return True
+        return False
+
+    def _checkEmptyRightColumn(self):
+        for pix in self.FIGURE_PIXELS:
+            x, y, x1, y1 = self.body.coords(pix)
             x_new = int(x + PIXEL)
             if x_new > BODY_W:
                 x_new = BODY_W
-            coords3 = '{0}x{1}'.format(x_new, int(y))
-            print(coords1, coords2, coords3)
-            if coords1 in self.ROW_PIXELS_COORDS or coords2 in self.ROW_PIXELS_COORDS or coords3 in self.ROW_PIXELS_COORDS:
+            coords = '{0}x{1}'.format(x_new, int(y))
+
+            if coords in self.ROW_PIXELS_COORDS:
                 return True
         return False
 
@@ -187,12 +207,35 @@ class Tetris:
             self.ROW_PIXELS_COORDS.append(
                 '{x}x{y}'.format(x=int(x), y=int(y)))
         self.FIGURE_PIXELS.clear()
+        self._checkFullRows()
         self._randomFigure()
+
+    def _checkFullRows(self):
+        rows = dict()
+        # Збираємо інформацію по конкретних лініях
+        for key, pix in enumerate(self.ROW_PIXELS):
+            column, row, x1, y1 = self.body.coords(pix)
+            row = int(row)
+            column = int(column)
+            if row not in rows.keys():
+                rows[row] = dict()
+
+            if column not in rows[row].keys():
+                rows[row][column] = pix
+
+        bonus = 0
+        for row in sorted(rows):
+            print(row, rows.get(row))
+            if len(rows.get(row)) == COLUMNS:
+                bonus += 1
+
+                for pix in rows.get(row).values():
+                    self.body.delete(pix)
 
     def _move(self):
         self._moveFigure()
-        if self._endGame != True:
-            self.root.after(self.SPEED, self._move)
+        # if self._endGame != True:
+        #     self.root.after(self.SPEED, self._move)
 
     def _start(self, e):
         self._endGame = False
@@ -252,13 +295,13 @@ class Tetris:
                 {'x': 1, 'y': -1},
                 {'x': 0, 'y': 0},
                 {'x': -1, 'y': 1},
-                {'x': -2, 'y': 1},
+                {'x': -2, 'y': 2},
             ],
             [
                 {'x': -1, 'y': 1},
                 {'x': 0, 'y': 0},
                 {'x': 1, 'y': -1},
-                {'x': 2, 'y': -1},
+                {'x': 2, 'y': -2},
             ]
         ]
         PIXEL_COLOR = 'red'
