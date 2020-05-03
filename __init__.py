@@ -236,13 +236,11 @@ class Tetris:
                 self._moveRowsDown(row)
                 self._updateScore(COLUMNS)
 
-        print(bonus)
         if bonus > 1:
             self._updateScore(bonus * COLUMNS)
 
     def _updateScore(self, score):
         self.score += int(score)
-        print(self.score)
         self.body.itemconfig(self.text_score, text='%s' % self.score)
 
     def _moveRowsDown(self, toRowNum=ROWS):
