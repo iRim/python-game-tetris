@@ -234,18 +234,20 @@ class Tetris:
                     self.body.delete(self.ROW_PIXELS.get(keypix))
                     self.ROW_PIXELS.pop(keypix)
                 self._moveRowsDown(row)
-            self._updateScore(COLUMNS)
+                self._updateScore(COLUMNS)
 
+        print(bonus)
         if bonus > 1:
-            self._updateScore(bonus * COLUMNS
+            self._updateScore(bonus * COLUMNS)
 
     def _updateScore(self, score):
         self.score += int(score)
-        self.body.itemconfig(self.score, text='%s' % self.score)
+        print(self.score)
+        self.body.itemconfig(self.text_score, text='%s' % self.score)
 
     def _moveRowsDown(self, toRowNum=ROWS):
         for pix in self.ROW_PIXELS.values():
-            x, y, x1, y1=self.body.coords(pix)
+            x, y, x1, y1 = self.body.coords(pix)
             if int(y) < toRowNum:
                 self.body.coords(pix, x, y + PIXEL, x1, y1 + PIXEL)
 
@@ -255,10 +257,10 @@ class Tetris:
             self.root.after(self.SPEED, self._move)
 
     def _start(self, e):
-        self._endGame=False
+        self._endGame = False
         self.body.itemconfig(self.text_error, state='hidden')
         self.body.itemconfig(self.text_start, state='hidden')
-        self.score=0
+        self.score = 0
         self.body.itemconfig(self.text_score, state='normal')
 
         self._randomFigure()
@@ -274,13 +276,13 @@ class Tetris:
         self.ALL_PIXELS.clear()
 
     def _createGame(self):
-        X=BODY_W // 2
-        Y=BODY_H // 2.2
-        self.text_score=self.body.create_text(
-            BODY_W - 60, 15, text=TEXT_SCORE, fill=TEXT_SCORE_COLOR, font=TEXT_SCORE_FONT, state='hidden')
-        self.text_error=self.body.create_text(
+        X = BODY_W // 2
+        Y = BODY_H // 2.2
+        self.text_score = self.body.create_text(
+            15, 15, text=TEXT_SCORE, fill=TEXT_SCORE_COLOR, font=TEXT_SCORE_FONT, state='hidden')
+        self.text_error = self.body.create_text(
             X, Y - PIXEL * 2, fill=TEXT_ERROR_COLOR, font=TEXT_ERROR_FONT, text=TEXT_ERROR, state='hidden')
-        self.text_start=self.body.create_text(
+        self.text_start = self.body.create_text(
             X, Y, fill=TEXT_NORMAL_COLOR, font=TEXT_NORMAL_FONT, text=TEXT_NORMAL)
         self.body.tag_bind(self.text_start, '<Button>', self._start)
 
@@ -290,7 +292,7 @@ class Tetris:
 
     class Cube(Figure):
 
-        PIXELS=[
+        PIXELS = [
             [
                 {'x': 0, 'y': 0},
                 {'x': 1, 'y': 0},
@@ -298,14 +300,14 @@ class Tetris:
                 {'x': 1, 'y': 1},
             ]
         ]
-        PIXEL_COLOR='gray'
+        PIXEL_COLOR = 'gray'
 
         def __init__(self, body):
-            self.body=body
+            self.body = body
 
     class Line(Figure):
 
-        PIXELS=[
+        PIXELS = [
             [
                 {'x': -1, 'y': 0},
                 {'x': 0, 'y': 0},
@@ -325,13 +327,13 @@ class Tetris:
                 {'x': 2, 'y': -2},
             ]
         ]
-        PIXEL_COLOR='red'
+        PIXEL_COLOR = 'red'
 
         def __init__(self, body):
-            self.body=body
+            self.body = body
 
     class HorseL(Figure):
-        PIXELS=[
+        PIXELS = [
             # дефолтне значення
             [
                 {'x': -1, 'y': 0},
@@ -368,14 +370,14 @@ class Tetris:
                 {'x': -2, 'y': 0},
             ],
         ]
-        PIXEL_COLOR='violet'
+        PIXEL_COLOR = 'violet'
 
         def __init__(self, body):
-            self.body=body
+            self.body = body
 
     class HorseR(Figure):
 
-        PIXELS=[
+        PIXELS = [
             # дефолтне значення
             [
                 {'x': -1, 'y': 0},
@@ -412,14 +414,14 @@ class Tetris:
                 {'x': 0, 'y': 2},
             ],
         ]
-        PIXEL_COLOR='dodgerblue'
+        PIXEL_COLOR = 'dodgerblue'
 
         def __init__(self, body):
-            self.body=body
+            self.body = body
 
     class LetterSL(Figure):
 
-        PIXELS=[
+        PIXELS = [
             [
                 {'x': -1, 'y': 0},
                 {'x': 0, 'y': 0},
@@ -439,14 +441,14 @@ class Tetris:
                 {'x': 2, 'y': 0},
             ]
         ]
-        PIXEL_COLOR='orange'
+        PIXEL_COLOR = 'orange'
 
         def __init__(self, body):
-            self.body=body
+            self.body = body
 
     class LetterSR(Figure):
 
-        PIXELS=[
+        PIXELS = [
             [
                 {'x': -1, 'y': 0},
                 {'x': 0, 'y': 0},
@@ -466,14 +468,14 @@ class Tetris:
                 {'x': 2, 'y': 0},
             ]
         ]
-        PIXEL_COLOR='orangered'
+        PIXEL_COLOR = 'orangered'
 
         def __init__(self, body):
-            self.body=body
+            self.body = body
 
     class LetterT(Figure):
 
-        PIXELS=[
+        PIXELS = [
             [
                 {'x': -1, 'y': 0},
                 {'x': 0, 'y': 0},
@@ -505,10 +507,10 @@ class Tetris:
                 {'x': 1, 'y': -1},
             ],
         ]
-        PIXEL_COLOR='green'
+        PIXEL_COLOR = 'green'
 
         def __init__(self, body):
-            self.body=body
+            self.body = body
 
 
 if __name__ == "__main__":
