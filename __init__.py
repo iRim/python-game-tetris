@@ -103,6 +103,12 @@ class Tetris:
             for i in range(rand):
                 self._rotate90Deg()
 
+        for pix in self.FIGURE_PIXELS:
+            x, y, x1, y1 = self.body.coords(pix)
+            keypix = '{0}x{1}'.format(int(x), int(y))
+            if self.ROW_PIXELS and keypix in self.ROW_PIXELS.keys():
+                self._end()
+
     def _keypress(self, e):
         if e.keysym in ['Left', 'Right']:
             position = 1
@@ -226,10 +232,6 @@ class Tetris:
             if column not in rows[row].keys():
                 rows[row][column] = key
 
-        ####
-        # проблема в self.ROW_PIXELS, залишаються старі ключі через які фігура не може опуститися нижче
-        ####
-
         bonus = 0
         for row in sorted(rows):
             if len(rows.get(row)) == COLUMNS:
@@ -240,23 +242,28 @@ class Tetris:
                 del rows[row]
                 self._moveRowsDown(row)
                 self._updateScore(COLUMNS)
-
+                self._recreateRowPixels()
         if bonus > 1:
             self._updateScore(bonus * COLUMNS)
+
+    # вирішення проблеми з ключами-значеннями в self.ROW_PIXELS
+    def _recreateRowPixels(self):
+        rows = dict(self.ROW_PIXELS)
+        self.ROW_PIXELS.clear()
+        for pix in rows.values():
+            x, y, x1, y1 = self.body.coords(pix)
+            keypix = '{0}x{1}'.format(int(x), int(y))
+            self.ROW_PIXELS[keypix] = pix
 
     def _updateScore(self, score):
         self.score += int(score)
         self.body.itemconfig(self.text_score, text='%s' % self.score)
 
     def _moveRowsDown(self, toRowNum=ROWS):
-        rows = dict(self.ROW_PIXELS)
-        self.ROW_PIXELS.clear()
-        for pix in rows.values():
+        for pix in self.ROW_PIXELS.values():
             x, y, x1, y1 = self.body.coords(pix)
-            self.ROW_PIXELS['{0}x{1}'.format(int(x), int(y))] = pix
             if int(y) < toRowNum:
                 self.body.coords(pix, x, y + PIXEL, x1, y1 + PIXEL)
-        del rows
 
     def _move(self):
         self._moveFigure()
@@ -275,12 +282,15 @@ class Tetris:
         self._move()
 
     def _end(self):
+        self._endGame = True
         self.body.itemconfig(self.text_error, state='normal')
         self.body.itemconfig(self.text_start, state='normal')
 
         for pix in self.ALL_PIXELS:
             self.body.delete(pix)
         self.ALL_PIXELS.clear()
+        self.FIGURE_PIXELS.clear()
+        self.ROW_PIXELS.clear()
 
     def _createGame(self):
         X = BODY_W // 2
