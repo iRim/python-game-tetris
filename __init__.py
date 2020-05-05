@@ -249,10 +249,14 @@ class Tetris:
         self.body.itemconfig(self.text_score, text='%s' % self.score)
 
     def _moveRowsDown(self, toRowNum=ROWS):
-        for pix in self.ROW_PIXELS.values():
+        rows = dict(self.ROW_PIXELS)
+        self.ROW_PIXELS.clear()
+        for pix in rows.values():
             x, y, x1, y1 = self.body.coords(pix)
+            self.ROW_PIXELS['{0}x{1}'.format(int(x), int(y))] = pix
             if int(y) < toRowNum:
                 self.body.coords(pix, x, y + PIXEL, x1, y1 + PIXEL)
+        del rows
 
     def _move(self):
         self._moveFigure()
