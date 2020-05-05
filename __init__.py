@@ -226,13 +226,18 @@ class Tetris:
             if column not in rows[row].keys():
                 rows[row][column] = key
 
+        ####
+        # проблема в self.ROW_PIXELS, залишаються старі ключі через які фігура не може опуститися нижче
+        ####
+
         bonus = 0
         for row in sorted(rows):
             if len(rows.get(row)) == COLUMNS:
                 bonus += 1
                 for keypix in rows.get(row).values():
                     self.body.delete(self.ROW_PIXELS.get(keypix))
-                    self.ROW_PIXELS.pop(keypix)
+                    del self.ROW_PIXELS[keypix]
+                del rows[row]
                 self._moveRowsDown(row)
                 self._updateScore(COLUMNS)
 
